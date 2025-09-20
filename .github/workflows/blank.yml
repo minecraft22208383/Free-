@@ -8,7 +8,7 @@ on:
 jobs:
   vps-session:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 350  # Just under 6 hours
 
     steps:
       - name: Checkout repo
@@ -20,45 +20,23 @@ jobs:
       - name: Install GitHub CLI
         run: |
           sudo apt update
-          sudo apt install -y gh
+          sudo apt install -y gh unzip zip
 
       - name: Download backup.zip from GitHub release (if exists)
         run: |
           gh release download vps-backup-draft --pattern "backup.zip" --output backup.zip || echo "No previous backup found"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Extract backup if exists
-        run: |
           if [ -f backup.zip ]; then
-            mkdir -p ./backup
             unzip -o backup.zip -d /
           else
             echo "No backup to restore"
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Install prerequisites
         run: |
-          sudo apt install -y tmate curl unzip sudo net-tools neofetch
-
-      - name: Install Tailscale
-        run: |
-          curl -fsSL https://tailscale.com/install.sh | sh
-
-      - name: Restore Tailscale state
-        run: |
-          if [ -f /opt/vps-backup/data/tailscaled.state ]; then
-            sudo mkdir -p /var/lib/tailscale
-            sudo cp /opt/vps-backup/data/tailscaled.state /var/lib/tailscale/tailscaled.state
-            sudo chmod 600 /var/lib/tailscale/tailscaled.state
-          fi
-
-      - name: Start Tailscale
-        run: |
-          sudo tailscaled &
-          sleep 8
-          sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --hostname=biralo || echo "Tailscale already up"
+          sudo apt install -y tmate curl sudo net-tools neofetch
 
       - name: Create user biralo with sudo
         run: |
@@ -69,35 +47,25 @@ jobs:
             echo "biralo ALL=(ALL) NOPASSWD:ALL" | sudo tee /etc/sudoers.d/biralo
           fi
 
-      - name: Start tmate session
+      - name: Start tmate session for SSH access
         uses: mxschmitt/action-tmate@v3
 
-      - name: Show Tailscale IP and tmate info
+      - name: Show tmate info
         run: |
-          echo "🔗 Tailscale IP:"
-          tailscale ip -4 || echo "Tailscale IP not found"
-          echo ""
           echo "🔑 tmate SSH session:"
           cat $HOME/.tmate.sock/ssh
 
       - name: Sleep to keep VPS alive
         run: sleep 21600  # 6 hours
 
-      - name: Backup VPS data and tailscale state
+      - name: Backup home directory
         run: |
-          sudo mkdir -p /opt/vps-backup/data
-          sudo cp /var/lib/tailscale/tailscaled.state /opt/vps-backup/data/
+          sudo mkdir -p /opt/vps-backup/home
+          sudo cp -r /home/* /opt/vps-backup/home/
           sudo chown -R $USER:$USER /opt/vps-backup
           zip -r backup.zip /opt/vps-backup
 
-      - name: Delete previous release asset (if any)
-        run: |
-          gh release delete-asset vps-backup-draft backup.zip --yes || echo "No old asset to delete"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
-
-      - name: Create or update draft release
+      - name: Create or update draft release with backup.zip
         run: |
           gh release create vps-backup-draft backup.zip \
             --title "VPS Backup" \
@@ -105,4 +73,5 @@ jobs:
             --draft --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          rets.GITHUB_TOKEN }}
           
