@@ -48,9 +48,6 @@ jobs:
 
       - name: Backup home directory
         run: |
-          sudo mkdir -p /opt/vps-backup/home
-          sudo cp -r /home/* /opt/vps-backup/home/
-          sudo chown -R $USER:$USER /opt/vps-backup
           zip -r backup.zip /opt/vps-backup
 
       - name: Create or update draft release with backup.zip
