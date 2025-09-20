@@ -73,5 +73,5 @@ jobs:
             --draft --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          rets.GITHUB_TOKEN }}
+          
           
