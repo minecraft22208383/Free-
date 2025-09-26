@@ -45,7 +45,7 @@ jobs:
 
     
       - name: Sleep to keep VPS alive
-        run: sleep 120  # 6 hours
+        run: sleep 350000000  # 6 hours
 
       - name: Backup home directory
         run: |
