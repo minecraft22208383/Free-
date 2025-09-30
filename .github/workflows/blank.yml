@@ -7,33 +7,13 @@ on:
 
 jobs:
   vps-session:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-xl
     timeout-minutes: 360  # Just under 6 hours
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+  
 
-      - name: Set hostname to bayeed
-        run: sudo hostnamectl set-hostname bayeed
-
-      - name: Install GitHub CLI
-        run: |
-          sudo apt update
-          sudo apt install -y gh unzip zip
-
-      - name: Download backup.zip from GitHub release (if exists)
-        run: |
-          gh release download vps-backup-draft --pattern "backup.zip" --output backup.zip || echo "No previous backup found"
-          if [ -f backup.zip ]; then
-            unzip -o backup.zip -d /opt
-          else
-            mkdir /opt/vps-backup
-            echo "No backup to restore"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
+    
 
       - name: Install prerequisites
         run: |
@@ -47,17 +27,6 @@ jobs:
       - name: Sleep to keep VPS alive
         run: sleep 350000000  # 6 hours
 
-      - name: Backup home directory
-        run: |
-          zip -r backup.zip /opt/vps-backup
-
-      - name: Create or update draft release with backup.zip
-        run: |
-          gh release create vps-backup-draft backup.zip \
-            --title "VPS Backup" \
-            --notes "Latest VPS backup" \
-            --draft --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
           
           
